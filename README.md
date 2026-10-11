@@ -117,4 +117,4 @@ Upload the files in `frontend/` to an S3 bucket with static website hosting enab
 
 ---
 
-Built for Environmental Hacks · Bharat Builds Tour · WeMakeDevs × AWS
+> Built for Environmental Hacks · Bharat Builds Tour · WeMakeDevs × AWS
