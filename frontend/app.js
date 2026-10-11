@@ -69,7 +69,7 @@ document.querySelectorAll(".loc-chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     document.querySelectorAll(".loc-chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
-    $("locNote").textContent = "";
+    $("locNote").textContent = chip.dataset.loc === "me" ? "Using your current location" : "Searching near: " + chip.textContent;
     $("locInput").value = "";
     if (chip.dataset.loc === "me") {
       chosenLoc = null;
