@@ -1,5 +1,42 @@
 const API_URL = "https://33g56mswvufasmxekpa7cjrtye0pqcve.lambda-url.us-east-1.on.aws/";
 
+function animateHeroParticles() {
+  const particles = document.querySelectorAll(".particle");
+  if (!particles.length) return;
+
+  const paths = [
+    [140, -150, 6200, 0.2], [-120, 170, 7600, 1.4], [150, -120, 6800, 2.2],
+    [-150, 150, 8200, 0.8], [120, -180, 7000, 2.8], [-160, 130, 7800, 1.8],
+    [100, -160, 6400, 3.4], [-130, 170, 8600, 2.5], [-110, -130, 7200, 4],
+    [130, 120, 5800, 0.5], [-90, -140, 7400, 1.1], [150, 110, 6900, 2.7],
+    [-130, -100, 8100, 3.1], [110, 160, 6300, 0.4], [-80, 120, 7700, 1.9],
+    [120, -130, 7200, 3.7], [-150, 90, 8500, 2.1], [100, 140, 6600, 4.4],
+    [-100, -150, 7900, 0.9], [140, 100, 6100, 2.5],
+  ];
+  const scheduleFrame = window.requestAnimationFrame
+    ? (callback) => window.requestAnimationFrame(callback)
+    : (callback) => window.setTimeout(() => callback(performance.now()), 16);
+  const startedAt = performance.now();
+  function frame(now) {
+    const elapsed = now - startedAt;
+    particles.forEach((particle, index) => {
+      const [x, y, duration, phase] = paths[index % paths.length];
+        const motionDuration = duration * 4;
+        const xProgress = Math.sin((elapsed / motionDuration) * Math.PI * 2 + phase);
+        const yProgress = Math.cos((elapsed / (motionDuration * 1.27)) * Math.PI * 2 + phase * 1.6);
+        const activity = (Math.abs(xProgress) + Math.abs(yProgress)) / 2;
+        const opacity = 0.35 + (activity * 0.5);
+        const scale = 0.72 + (activity * 0.46);
+      particle.style.opacity = opacity.toFixed(2);
+        particle.style.transform = `translate3d(${(x * xProgress).toFixed(1)}px, ${(y * yProgress).toFixed(1)}px, 0) scale(${scale.toFixed(2)})`;
+    });
+    scheduleFrame(frame);
+  }
+  scheduleFrame(frame);
+}
+
+animateHeroParticles();
+
 const $ = (id) => document.getElementById(id);
 let imageB64 = null;
 let data = null;
@@ -101,7 +138,7 @@ function render(hadLocation) {
   $("cat").textContent = cat;
   $("cat").className = "badge " + cat.replace(/[^a-z]+/g, "-");
   $("bin").textContent = data.bin || "";
-  $("why").textContent = data.why || "";
+  $("whyResult").textContent = data.why || "";
   const v = String(data.sell_value_inr || "0");
   $("val").textContent = v === "0" ? "No resale value" : "₹" + v;
 
