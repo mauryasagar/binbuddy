@@ -143,6 +143,17 @@ const dz = $("dropzone");
 );
 dz.addEventListener("drop", (e) => handleFile(e.dataTransfer.files[0]));
 
+async function callApi(body) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json;
+}
+
 $("go").addEventListener("click", async () => {
   if (!imageB64) return;
   const btn = $("go");
@@ -155,13 +166,16 @@ $("go").addEventListener("click", async () => {
   try {
     const body = { image: imageB64, format: "jpeg" };
     if (loc) { body.lat = loc.lat; body.lon = loc.lon; }
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json();
-    if (json.error) throw new Error(json.error);
+
+    let json = await callApi(body);
+    if (loc && (!json.places || !json.places.length)) {
+      setStatus("Looking again for nearby places…");
+      try {
+        const again = await callApi(body);
+        if (again.places && again.places.length) json = again;
+      } catch (e) {}
+    }
+
     data = json;
     render(!!loc);
     setStatus("");
