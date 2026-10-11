@@ -63,7 +63,47 @@ function resizeToBase64(file, maxSide = 1024) {
   });
 }
 
+let chosenLoc = null;
+
+document.querySelectorAll(".loc-chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".loc-chip").forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    $("locNote").textContent = "";
+    $("locInput").value = "";
+    if (chip.dataset.loc === "me") {
+      chosenLoc = null;
+    } else {
+      const [lat, lon] = chip.dataset.loc.split(",").map(Number);
+      chosenLoc = { lat, lon };
+    }
+  });
+});
+
+$("locForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const q = $("locInput").value.trim();
+  if (!q) return;
+  $("locNote").textContent = "Searching…";
+  try {
+    const res = await fetch(
+      "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q=" + encodeURIComponent(q)
+    );
+    const found = await res.json();
+    if (!found.length) {
+      $("locNote").textContent = "Place not found. Try another name.";
+      return;
+    }
+    chosenLoc = { lat: parseFloat(found[0].lat), lon: parseFloat(found[0].lon) };
+    document.querySelectorAll(".loc-chip").forEach((c) => c.classList.remove("active"));
+    $("locNote").textContent = "Searching near: " + found[0].display_name.split(",").slice(0, 2).join(",");
+  } catch (err) {
+    $("locNote").textContent = "Could not look up that place.";
+  }
+});
+
 function getLocation() {
+  if (chosenLoc) return Promise.resolve(chosenLoc);
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
     navigator.geolocation.getCurrentPosition(
