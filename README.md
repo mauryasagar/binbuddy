@@ -22,10 +22,6 @@ BinBuddy turns a single photo into a clear next step: what the item is, how to d
 |---|---|
 | ![Home page](screenshots/home.png) | ![Analysis result](screenshots/result.png) |
 
-| Nearby collection points | Pickup message |
-|---|---|
-| ![Nearby places](screenshots/places.png) | ![Pickup message](screenshots/message.png) |
-
 ## Features
 
 - **Instant identification:** recognises the item from one photo.
