@@ -129,12 +129,17 @@ def nearby_places(lat, lon):
     endpoints = [
         "https://overpass-api.de/api/interpreter",
         "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter",
     ]
+    headers = {
+        "User-Agent": "BinBuddy/1.0 (Environmental Hacks project)",
+        "Accept": "*/*",
+    }
     elements = []
     for url in endpoints:
         try:
-            req = urllib.request.Request(url, data=data)
-            with urllib.request.urlopen(req, timeout=22) as r:
+            req = urllib.request.Request(url, data=data, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as r:
                 elements = json.loads(r.read())["elements"]
             break
         except Exception:
