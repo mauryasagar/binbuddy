@@ -63,7 +63,7 @@ function resizeToBase64(file, maxSide = 1024) {
   });
 }
 
-let chosenLoc = null;
+let chosenLoc = { lat: 28.6139, lon: 77.2090 };
 
 document.querySelectorAll(".loc-chip").forEach((chip) => {
   chip.addEventListener("click", () => {
