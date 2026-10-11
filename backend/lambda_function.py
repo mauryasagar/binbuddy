@@ -2,8 +2,10 @@ import json
 import os
 import base64
 import math
+import time
 import urllib.request
 import urllib.parse
+import urllib.error
 
 AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").lower()
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
@@ -16,12 +18,19 @@ Look at the photo of a household item and reply with ONLY valid JSON, no extra t
   "item": "short name of the item",
   "category": "one of: e-waste, dry recyclable, wet/organic, hazardous, reusable, other",
   "bin": "which bin or where it should go, one short sentence",
-  "sell_value_inr": "rough scrap value in rupees like 10-30, or 0 if none",
+  "sell_value_inr": "a NARROW realistic range in rupees (upper value at most 2x the lower, like 40-80) that an Indian kabadiwala or e-waste dealer would pay for this item as old or non-working scrap, or 0 if none",
   "why": "one short sentence on why it must not go in the normal dustbin, or why it is fine",
   "search_term": "one of: scrap, e-waste, recycling",
   "pickup_message_en": "a short friendly message to a local scrap collector offering this item for pickup",
   "pickup_message_hi": "the same message in simple Hindi"
-}"""
+}
+
+Pricing rules (approximate Indian scrap rates, adjust for the item's size and material):
+- Plastic bottles about Rs 10-20 per kg, paper and cardboard about Rs 10-15 per kg.
+- Iron about Rs 25-35 per kg, aluminium about Rs 100-130 per kg, copper about Rs 500-650 per kg.
+- Phone charger or cable: Rs 5-20. Old non-working phone: Rs 100-400. Old non-working laptop: Rs 500-1500.
+- Never give a range wider than 2x. Say 0 if it has no resale value.
+"""
 
 
 def parse_json(text):
@@ -30,7 +39,6 @@ def parse_json(text):
 
 
 def ask_gemini(image_b64, fmt):
-    import time
     if not GEMINI_KEY:
         raise Exception("GEMINI_API_KEY is not set")
     payload = {
@@ -104,20 +112,30 @@ def km(lat1, lon1, lat2, lon2):
 
 
 def nearby_places(lat, lon):
+    radius = 15000
     q = (
-        "[out:json][timeout:15];("
-        f'nwr["shop"="scrap"](around:7000,{lat},{lon});'
-        f'nwr["amenity"="recycling"](around:7000,{lat},{lon});'
-        f'nwr["recycling:electrical_items"="yes"](around:7000,{lat},{lon});'
-        ");out center 20;"
+        "[out:json][timeout:20];("
+        f'nwr["shop"="scrap"](around:{radius},{lat},{lon});'
+        f'nwr["industrial"="scrap_yard"](around:{radius},{lat},{lon});'
+        f'nwr["amenity"="recycling"](around:{radius},{lat},{lon});'
+        f'nwr["amenity"="waste_transfer_station"](around:{radius},{lat},{lon});'
+        f'nwr["recycling:electrical_items"="yes"](around:{radius},{lat},{lon});'
+        ");out center 30;"
     )
     data = urllib.parse.urlencode({"data": q}).encode()
-    req = urllib.request.Request("https://overpass-api.de/api/interpreter", data=data)
-    try:
-        with urllib.request.urlopen(req, timeout=18) as r:
-            elements = json.loads(r.read())["elements"]
-    except Exception:
-        return []
+    endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    ]
+    elements = []
+    for url in endpoints:
+        try:
+            req = urllib.request.Request(url, data=data)
+            with urllib.request.urlopen(req, timeout=22) as r:
+                elements = json.loads(r.read())["elements"]
+            break
+        except Exception:
+            continue
     places = []
     for e in elements:
         plat = e.get("lat") or (e.get("center") or {}).get("lat")
