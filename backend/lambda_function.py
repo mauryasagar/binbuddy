@@ -18,18 +18,21 @@ Look at the photo of a household item and reply with ONLY valid JSON, no extra t
   "item": "short name of the item",
   "category": "one of: e-waste, dry recyclable, wet/organic, hazardous, reusable, other",
   "bin": "which bin or where it should go, one short sentence",
-  "sell_value_inr": "a NARROW realistic range in rupees (upper value at most 2x the lower, like 40-80) that an Indian kabadiwala or e-waste dealer would pay for this item as old or non-working scrap, or 0 if none",
+  "sell_value_inr": "a NARROW realistic range in rupees (upper value at most 2x the lower, like 40-80). If the item looks intact and likely working, give its used resale price in India. If it looks broken, very old or is waste material, give the scrap or parts price an Indian kabadiwala or e-waste dealer would pay. Use 0 if it has no value",
   "why": "one short sentence on why it must not go in the normal dustbin, or why it is fine",
   "search_term": "one of: scrap, e-waste, recycling",
   "pickup_message_en": "a short friendly message to a local scrap collector offering this item for pickup",
   "pickup_message_hi": "the same message in simple Hindi"
 }
 
-Pricing rules (approximate Indian scrap rates, adjust for the item's size and material):
+Pricing rules (approximate Indian rates, adjust for size, brand and condition):
+- Look at the condition in the photo. Intact and modern means used resale price. Broken or very old means scrap or parts price.
+- Laptop: intact Rs 8000-16000, broken or very old Rs 500-1500.
+- Smartphone: intact Rs 3000-6000, broken Rs 100-400.
+- Phone charger or cable: Rs 5-20.
 - Plastic bottles about Rs 10-20 per kg, paper and cardboard about Rs 10-15 per kg.
 - Iron about Rs 25-35 per kg, aluminium about Rs 100-130 per kg, copper about Rs 500-650 per kg.
-- Phone charger or cable: Rs 5-20. Old non-working phone: Rs 100-400. Old non-working laptop: Rs 500-1500.
-- Never give a range wider than 2x. Say 0 if it has no resale value.
+- Never give a range wider than 2x. Use 0 if it has no resale value.
 """
 
 
