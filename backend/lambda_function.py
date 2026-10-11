@@ -1,12 +1,14 @@
 import json
+import os
 import base64
 import math
 import urllib.request
 import urllib.parse
-import boto3
 
-bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
-MODEL_ID = "amazon.nova-lite-v1:0"
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").lower()
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+BEDROCK_MODEL = os.environ.get("BEDROCK_MODEL", "us.amazon.nova-lite-v1:0")
 
 PROMPT = """You are BinBuddy, a waste-sorting assistant for India.
 Look at the photo of a household item and reply with ONLY valid JSON, no extra text:
@@ -22,21 +24,74 @@ Look at the photo of a household item and reply with ONLY valid JSON, no extra t
 }"""
 
 
-def ask_model(image_bytes, fmt):
-    resp = bedrock.converse(
-        modelId=MODEL_ID,
+def parse_json(text):
+    start, end = text.find("{"), text.rfind("}")
+    return json.loads(text[start:end + 1])
+
+
+def ask_gemini(image_b64, fmt):
+    import time
+    if not GEMINI_KEY:
+        raise Exception("GEMINI_API_KEY is not set")
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": PROMPT},
+                {"inline_data": {"mime_type": f"image/{fmt}", "data": image_b64}},
+            ]
+        }],
+        "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
+    }
+    models = [GEMINI_MODEL, "gemini-flash-latest", "gemini-flash-lite-latest"]
+    last_error = ""
+    for model in models:
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent?key={GEMINI_KEY}"
+        )
+        for attempt in range(2):
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    out = json.loads(r.read())
+                return parse_json(out["candidates"][0]["content"]["parts"][0]["text"])
+            except urllib.error.HTTPError as e:
+                last_error = model + " -> " + str(e.code) + ": " + e.read().decode()[:200]
+                if e.code in (503, 429):
+                    time.sleep(1.5)
+                    continue
+                break
+            except Exception as e:
+                last_error = model + " -> " + str(e)
+                break
+    raise Exception("All Gemini models busy or unavailable. Last: " + last_error)
+
+
+def ask_bedrock(image_b64, fmt):
+    import boto3
+    client = boto3.client("bedrock-runtime", region_name="us-east-1")
+    resp = client.converse(
+        modelId=BEDROCK_MODEL,
         messages=[{
             "role": "user",
             "content": [
-                {"image": {"format": fmt, "source": {"bytes": image_bytes}}},
+                {"image": {"format": fmt, "source": {"bytes": base64.b64decode(image_b64)}}},
                 {"text": PROMPT},
             ],
         }],
         inferenceConfig={"maxTokens": 600, "temperature": 0.2},
     )
-    text = resp["output"]["message"]["content"][0]["text"]
-    start, end = text.find("{"), text.rfind("}")
-    return json.loads(text[start:end + 1])
+    return parse_json(resp["output"]["message"]["content"][0]["text"])
+
+
+def ask_model(image_b64, fmt):
+    if AI_PROVIDER == "bedrock":
+        return ask_bedrock(image_b64, fmt)
+    return ask_gemini(image_b64, fmt)
 
 
 def km(lat1, lon1, lat2, lon2):
@@ -98,9 +153,8 @@ def lambda_handler(event, context):
         fmt = body.get("format", "jpeg").lower()
         if fmt == "jpg":
             fmt = "jpeg"
-        image_bytes = base64.b64decode(body["image"])
 
-        result = ask_model(image_bytes, fmt)
+        result = ask_model(body["image"], fmt)
 
         lat, lon = body.get("lat"), body.get("lon")
         result["places"] = nearby_places(float(lat), float(lon)) if lat and lon else []
