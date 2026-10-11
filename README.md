@@ -20,7 +20,7 @@ BinBuddy turns a single photo into a clear next step: what the item is, how to d
 
 | Home | Analysis result |
 |---|---|
-| ![Home page](screenshots/home.png) | ![Analysis result](screenshots/result.png) |
+| ![Home page](assets/home.png) | ![Analysis result](assets/result.png) |
 
 ## Features
 
@@ -79,7 +79,7 @@ binbuddy/
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
-└── screenshots/
+└── assets/
 ```
 
 ## Getting Started
