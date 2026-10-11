@@ -147,9 +147,11 @@ function render(hadLocation) {
   if (!data.places || !data.places.length) {
     const d = document.createElement("div");
     d.className = "empty";
-    d.textContent = hadLocation
-      ? "No listed points within 7 km. Try searching 'kabadi' or 'e-waste recycler' on Google Maps."
-      : "Allow location access to see nearby scrap shops and recyclers.";
+    if (hadLocation) {
+      d.innerHTML = 'No listed points found nearby. <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/kabadi+e-waste+recycler+near+me">Search kabadi / e-waste recycler on Google Maps</a>';
+    } else {
+      d.textContent = "Allow location access to see nearby scrap shops and recyclers.";
+    }
     box.appendChild(d);
   } else {
     data.places.forEach((p) => {
